@@ -373,11 +373,18 @@ class KeckKCWIKCRMSpectrograph(spectrograph.Spectrograph):
                           'arc-lamp shutter might be closed)!')
             return is_align
         if ftype == 'arc':
+            # PypeIt is only setup to wavelength calibrate using the FeAr lamp.
             return good_exp & (fitstbl['idname'] == 'ARCLAMP') & (fitstbl['calpos'] == 'Mirror') \
                     & self.lamps(fitstbl, 'arcs')
         if ftype == 'tilt':
-            return good_exp & (fitstbl['idname'] == 'ARCLAMP') & (fitstbl['calpos'] == 'Mirror') \
+            # Check to see if ThAr frames are available. If so, use them. Otherwise, use the FeAr lamp.
+            tmp = good_exp & (fitstbl['idname'] == 'ARCLAMP') & (fitstbl['calpos'] == 'Mirror') \
                     & self.lamps(fitstbl, 'tilts')
+            if np.any(tmp):
+                return tmp
+            # No ThAr frames, so use the FeAr lamp
+            return good_exp & (fitstbl['idname'] == 'ARCLAMP') & (fitstbl['calpos'] == 'Mirror') \
+                   & self.lamps(fitstbl, 'arcs')
         if ftype == 'pinhole':
             # Don't type pinhole frames
             return np.zeros(len(fitstbl), dtype=bool)
